@@ -35,6 +35,35 @@ def save_filing_meta(meta: dict) -> int:
 
 import os
 
+def get_filing_id(accession_no: str) -> int:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id FROM sec_filing WHERE accession_no = %s LIMIT 1",
+                (accession_no,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise KeyError(f"sec_filing row not found for {accession_no}")
+            return row["id"]
+    finally:
+        conn.close()
+
+
+def mark_filing_notified(accession_no: str) -> None:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "UPDATE sec_filing SET notified_at = NOW() WHERE accession_no = %s AND notified_at IS NULL",
+                (accession_no,)
+            )
+            conn.commit()
+    finally:
+        conn.close()
+
+
 def save_filing_text(accession_no: str, content: str) -> str:
     """
     공시 본문을 로컬 텍스트 파일로 저장합니다.

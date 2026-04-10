@@ -74,10 +74,13 @@ def check_new_filings(ticker: str):
         }
 
         try:
-            filing_id = save.save_filing_meta(meta)
+            if status["already_saved"]:
+                filing_id = save.get_filing_id(accession_no)
+            else:
+                filing_id = save.save_filing_meta(meta)
+                print(M["LOG_SEC_SAVED"].format(access_no=accession_no, ticker=ticker))
             meta["filing_id"] = filing_id
             new_filings.append(meta)
-            print(M["LOG_SEC_SAVED"].format(access_no=accession_no, ticker=ticker))
         except Exception as e:
             print(M["LOG_SEC_ERR_SAVE"].format(access_no=accession_no, ticker=ticker, err=e))
             traceback.print_exc()

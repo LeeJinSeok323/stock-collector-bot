@@ -25,15 +25,15 @@ GPT_FORMS = {
 }
 
 
-def _exists_in_sec_filing(accession_no: str) -> bool:
+def _get_filing_row(accession_no: str):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute(
-                f"SELECT 1 FROM {FILING_TABLE} WHERE accession_no = %s LIMIT 1",
+                f"SELECT id, notified_at FROM {FILING_TABLE} WHERE accession_no = %s LIMIT 1",
                 (accession_no,)
             )
-            return cursor.fetchone() is not None
+            return cursor.fetchone()
     finally:
         conn.close()
 
@@ -41,16 +41,24 @@ def _exists_in_sec_filing(accession_no: str) -> bool:
 def check_filing_status(accession_no: str, form_type: str) -> dict:
     """
     SEC 공시 상태 판정 (판단만, 처리 X)
+
+    already_saved:  sec_filing DB에 레코드가 이미 존재 (테스트 스크립트 등으로 삽입된 경우 포함)
+    should_notify:  아직 알림을 보낸 적 없음 (notified_at IS NULL)
+    should_gpt:     알림 대상이면서 GPT 요약 대상 폼 타입
     """
     accession_no = (accession_no or "").strip()
     form_type = (form_type or "").strip().upper()
 
-    meta_exists = _exists_in_sec_filing(accession_no)
+    row = _get_filing_row(accession_no)
 
-    should_notify = not meta_exists
+    already_saved = row is not None
+    already_notified = already_saved and row["notified_at"] is not None
+
+    should_notify = not already_notified
     should_gpt = should_notify and (form_type in GPT_FORMS)
 
     return {
         "should_notify": should_notify,
         "should_gpt": should_gpt,
+        "already_saved": already_saved,
     }

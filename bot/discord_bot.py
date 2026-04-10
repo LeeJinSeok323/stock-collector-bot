@@ -71,8 +71,7 @@ class SECBot(commands.Bot):
                     embed.add_field(name=M["EMBED_FIELD_ACC_NO"], value=filing.get("accession_no", M["EMBED_VALUE_NA"]), inline=True)
                     if filing.get("accepted_at"):
                         embed.add_field(name=M["EMBED_FIELD_ACCEPTED"], value=filing.get("accepted_at", M["EMBED_VALUE_NA"]), inline=False)
-                    
-                    # [MODIFIED] 모든 채널에 알림 전송
+
                     conn_subs = get_db_connection()
                     try:
                         with conn_subs.cursor() as cursor:
@@ -81,31 +80,33 @@ class SECBot(commands.Bot):
                     finally:
                         conn_subs.close()
 
+                    sent_any = False
                     for ch in target_channels:
                         guild_id = int(ch['guild_id'])
                         channel_id = int(ch['channel_id'])
-                        
+
                         guild = self.get_guild(guild_id)
                         if not guild: continue
                         channel = guild.get_channel(channel_id)
                         if not channel: continue
-                        
+
                         msg = await channel.send(content=M["MENTION_NEW_FILING"], embed=embed)
-                            
+                        sent_any = True
+
                         thread_name = M["THREAD_TITLE"].format(
                             form_type=filing.get('form_type', 'Unknown'),
                             date=filing.get('filing_date', M["EMBED_VALUE_NA"])
                         )
                         thread = await msg.create_thread(name=thread_name, auto_archive_duration=1440)
                         loading_msg = await thread.send(M["THREAD_SUMMARY_LOADING"])
-                        
+
                         try:
                             acc_no = filing.get("accession_no", "")
                             form_type = filing.get("form_type", "")
-                            
+
                             text = await loop.run_in_executor(None, sec_save.get_filing_text, acc_no)
                             result_str = await loop.run_in_executor(None, gemini_service.summarize_filing, ticker, form_type, text)
-                            
+
                             try:
                                 result_json = json.loads(result_str)
                                 new_thread_name = result_json.get("thread_title", thread_name)
@@ -113,14 +114,16 @@ class SECBot(commands.Bot):
                                     new_thread_name = new_thread_name[:97] + "..."
                                 await thread.edit(name=new_thread_name)
                                 summary_content = result_json.get("summary", "내용을 불러올 수 없습니다.")
-                                # 알림 메시지 내용을 AI가 생성한 제목으로 변경
                                 await msg.edit(content=f"🔔 **{new_thread_name}**")
                             except json.JSONDecodeError:
-                                summary_content = result_str # JSON 파싱 실패 시 원본 문자열 출력
-                            
+                                summary_content = result_str
+
                             await loading_msg.edit(content=summary_content)
                         except Exception as e:
                             await loading_msg.edit(content=M.get("THREAD_SUMMARY_ERROR", f"Error: {e}"))
+
+                    if sent_any:
+                        await loop.run_in_executor(None, sec_save.mark_filing_notified, filing.get("accession_no", ""))
             except Exception as e:
                 print(M["LOG_TASK_ERR_CHECK"].format(ticker=ticker, err=e))
 
