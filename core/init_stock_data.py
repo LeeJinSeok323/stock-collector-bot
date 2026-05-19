@@ -1,9 +1,10 @@
 import time
 import random
+import datetime
 import pandas as pd
 from curl_cffi import requests
 import yfinance as yf
-from config.db_config import get_db_connection
+from config.db_config import get_db_connection, get_clickhouse_client
 
 def init_stock_data(limit=50):
     conn = get_db_connection()
@@ -74,7 +75,7 @@ def init_stock_data(limit=50):
                     for date, row in data.iterrows():
                         val_list.append((
                             ticker,
-                            date.strftime('%Y-%m-%d'),
+                            date.date() if hasattr(date, 'date') else datetime.date.fromisoformat(str(date)[:10]),
                             float(row['Open']),
                             float(row['High']),
                             float(row['Low']),
@@ -82,17 +83,14 @@ def init_stock_data(limit=50):
                             int(row['Volume'])
                         ))
 
+                    if val_list:
+                        ch = get_clickhouse_client()
+                        ch.execute(
+                            'INSERT INTO stocker.stock_daily_price (ticker, date, open, high, low, close, volume) VALUES',
+                            val_list
+                        )
+
                     with conn.cursor() as cursor:
-                        sql = """
-                            INSERT INTO stock_price_history (ticker, date, open, high, low, close, volume)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            ON DUPLICATE KEY UPDATE 
-                                open = VALUES(open), high = VALUES(high), 
-                                low = VALUES(low), close = VALUES(close), 
-                                volume = VALUES(volume)
-                        """
-                        if val_list:
-                            cursor.executemany(sql, val_list)
                         cursor.execute("UPDATE stocks SET last_fetched_at = NOW() WHERE ticker = %s", (ticker,))
                         conn.commit()
 
