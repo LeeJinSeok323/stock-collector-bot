@@ -37,7 +37,7 @@ def init_stock_data(limit=50):
 
                 data = yf.download(
                     tickers=ticker,
-                    period="max",
+                    start="1900-01-01",
                     interval="1d",
                     auto_adjust=False,
                     prepost=False,
@@ -51,7 +51,7 @@ def init_stock_data(limit=50):
                         print(f"[batch] Rate limited on {ticker}. Sleeping for 15 minutes.", flush=True)
                         time.sleep(900)
                         continue
-                    elif "delisted" in error_msgs or "no timezone found" in error_msgs or "no price data" in error_msgs or "yftzmissingerror" in error_msgs:
+                    elif "delisted" in error_msgs or "no timezone found" in error_msgs or "no price data" in error_msgs or "yftzmissingerror" in error_msgs or "period" in error_msgs or "invalid" in error_msgs:
                         print(f"[batch] Delisted detected for {ticker}.", flush=True)
 
                         with conn.cursor() as cursor:
