@@ -37,7 +37,7 @@ def init_stock_data(limit=50):
 
                 data = yf.download(
                     tickers=ticker,
-                    start="1900-01-01",
+                    start="1970-01-01",
                     interval="1d",
                     auto_adjust=False,
                     prepost=False,
