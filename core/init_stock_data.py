@@ -79,7 +79,7 @@ def _initial_load(conn, session):
                 if val_list:
                     ch = get_clickhouse_client()
                     ch.execute(
-                        'INSERT INTO stocker.stock_daily_price (ticker, date, open, high, low, close, volume) VALUES',
+                        'INSERT INTO stocker.ohlcv_daily (ticker, date, open, high, low, close, volume) VALUES',
                         val_list
                     )
 
@@ -182,7 +182,7 @@ def _incremental_update(conn, session):
             if val_list:
                 ch = get_clickhouse_client()
                 ch.execute(
-                    'INSERT INTO stocker.stock_daily_price (ticker, date, open, high, low, close, volume) VALUES',
+                    'INSERT INTO stocker.ohlcv_daily (ticker, date, open, high, low, close, volume) VALUES',
                     val_list
                 )
 
