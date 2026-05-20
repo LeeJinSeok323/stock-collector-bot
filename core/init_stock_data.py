@@ -6,15 +6,15 @@ from curl_cffi import requests
 import yfinance as yf
 from config.db_config import get_db_connection, get_clickhouse_client
 
-def init_stock_data(limit=50):
+def init_stock_data():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT ticker FROM stocks 
-                WHERE last_fetched_at IS NULL 
-                ORDER BY ticker ASC LIMIT %s
-            """, (limit,))
+                SELECT ticker FROM stocks
+                WHERE last_fetched_at IS NULL
+                ORDER BY ticker ASC
+            """)
             tickers = [row['ticker'] for row in cursor.fetchall()]
 
         if not tickers:
