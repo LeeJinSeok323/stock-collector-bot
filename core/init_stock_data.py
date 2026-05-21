@@ -15,7 +15,7 @@ def _initial_load(conn, session):
     with conn.cursor() as cursor:
         cursor.execute("""
             SELECT ticker FROM stocks
-            WHERE last_price_date IS NULL
+            WHERE last_price_date IS NULL AND status = 'ACTIVE'
             ORDER BY ticker ASC
         """)
         tickers = [row['ticker'] for row in cursor.fetchall()]
