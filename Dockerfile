@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 기본 실행 명령
-CMD ["python", "-m", "sec.sec_client"]
+CMD ["python", "main.py"]
