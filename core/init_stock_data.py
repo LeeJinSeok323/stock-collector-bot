@@ -115,22 +115,25 @@ def _initial_load(conn, session):
 
 def _incremental_update(conn, session):
     with conn.cursor() as cursor:
+        # 14일 이상 밀린 종목만 우선 처리 — 갭 없으면 최신화 필요한 것만
         cursor.execute("""
             SELECT ticker, last_price_date FROM stocks
-            WHERE last_price_date IS NOT NULL AND status = 'ACTIVE'
+            WHERE last_price_date IS NOT NULL
+              AND status = 'ACTIVE'
+              AND last_price_date < CURDATE() - INTERVAL 14 DAY
             ORDER BY last_price_date ASC
         """)
         rows = cursor.fetchall()
 
     if not rows:
-        print("[incremental] No tickers to update.", flush=True)
+        print("[incremental] No tickers need update (all within 14 days).", flush=True)
         return
 
     tickers_dates = {row['ticker']: row['last_price_date'] for row in rows}
     tickers = list(tickers_dates.keys())
     total_batches = (len(tickers) + INCREMENTAL_BATCH_SIZE - 1) // INCREMENTAL_BATCH_SIZE
 
-    print(f"[incremental] Starting update for {len(tickers)} tickers ({total_batches} batches).", flush=True)
+    print(f"[incremental] {len(tickers)} tickers behind by 14+ days ({total_batches} batches).", flush=True)
 
     for i in range(0, len(tickers), INCREMENTAL_BATCH_SIZE):
         batch = tickers[i:i + INCREMENTAL_BATCH_SIZE]
