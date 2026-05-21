@@ -77,6 +77,9 @@ def _initial_load(conn, session):
                     o, h, l, c = float(row['Open']), float(row['High']), float(row['Low']), float(row['Close'])
                     if not all(math.isfinite(v) for v in [o, h, l, c]):
                         continue
+                    # 역분할 조정 오류로 인한 비현실적 가격 제거 (Decimal(15,4) 오버플로우 방지)
+                    if any(v > 9_000_000_000_000 for v in [o, h, l, c]):
+                        continue
                     val_list.append((ticker, d, o, h, l, c, int(row['Volume'])))
                     if last_date is None or d > last_date:
                         last_date = d
