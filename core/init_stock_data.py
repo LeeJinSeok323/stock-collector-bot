@@ -7,7 +7,7 @@ import yfinance as yf
 from config.db_config import get_db_connection, get_clickhouse_client
 
 INCREMENTAL_BATCH_SIZE = 15
-INCREMENTAL_PERIOD = "7d"
+INCREMENTAL_PERIOD = "60d"
 
 
 def _initial_load(conn, session):
