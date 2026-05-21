@@ -127,7 +127,7 @@ def _incremental_update(conn, session):
 
     if not rows:
         print("[incremental] No tickers need update (all within 14 days).", flush=True)
-        return
+        return False
 
     tickers_dates = {row['ticker']: row['last_price_date'] for row in rows}
     tickers = list(tickers_dates.keys())
@@ -205,13 +205,21 @@ def _incremental_update(conn, session):
             print(f"[incremental] Batch {batch_num} error: {e}", flush=True)
             time.sleep(30)
 
+    return True
+
 
 def init_stock_data():
+    """
+    Phase 1 수행. 작업이 있었으면 True, 없었으면 False 반환.
+    False 반환 = 갭 없음 = Phase 2 전환 가능.
+    """
     conn = get_db_connection()
     session = requests.Session(impersonate="chrome120")
     try:
         has_initial = _initial_load(conn, session)
-        if not has_initial:
-            _incremental_update(conn, session)
+        if has_initial:
+            return True
+        had_work = _incremental_update(conn, session)
+        return bool(had_work)
     finally:
         conn.close()

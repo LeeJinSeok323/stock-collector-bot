@@ -13,19 +13,29 @@ def _run_in_thread(func):
     t.start()
 
 
+def _data_pipeline():
+    """
+    Phase 1 → Phase 2 자동 전환 파이프라인.
+    - 갭 있음: init_stock_data (Phase 1) 실행
+    - 갭 없음: collect_and_aggregate (Phase 2) 실행
+    _already_collected() 체크로 당일 중복 수집 방지.
+    """
+    had_work = init_stock_data()
+    if not had_work:
+        print("[pipeline] Phase 1 complete → triggering Phase 2", flush=True)
+        collect_and_aggregate()
+
+
 def run_scheduler():
     print("[scheduler] Registering jobs...", flush=True)
     schedule.every(7).days.do(_run_in_thread, update_stocks)
-    schedule.every(1).hours.do(_run_in_thread, init_stock_data)
+    schedule.every(1).hours.do(_run_in_thread, _data_pipeline)
     schedule.every(10).minutes.do(_run_in_thread, collect_indices)
-    # 매일 05:30 KST (미국 장 마감 후) — 분봉 수집 + 일봉 집계
-    schedule.every().day.at("05:30").do(_run_in_thread, collect_and_aggregate)
 
     print("[scheduler] Running initial jobs...", flush=True)
     _run_in_thread(update_stocks)
-    _run_in_thread(init_stock_data)
+    _run_in_thread(_data_pipeline)
     _run_in_thread(collect_indices)
-    # 분봉 수집은 시작 시 실행 안 함 (05:30 KST 스케줄만 사용)
 
     while True:
         schedule.run_pending()
