@@ -118,7 +118,11 @@ def _initial_load(conn, session):
             print(f"[initial] Unexpected Error on {ticker}: {e}", flush=True)
             time.sleep(60)
 
-    return True
+    # 처리 후 아직 남은 종목 있으면 True, 없으면 False → 즉시 incremental 실행
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) as cnt FROM stocks WHERE last_price_date IS NULL AND status = 'ACTIVE'")
+        remaining = cursor.fetchone()['cnt']
+    return remaining > 0
 
 
 def _incremental_update(conn, session):
