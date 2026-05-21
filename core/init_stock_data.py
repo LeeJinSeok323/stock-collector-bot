@@ -1,6 +1,7 @@
 import time
 import random
 import datetime
+import math
 import pandas as pd
 from curl_cffi import requests
 import yfinance as yf
@@ -66,13 +67,17 @@ def _initial_load(conn, session):
             if not data.empty:
                 if isinstance(data.columns, pd.MultiIndex):
                     data.columns = data.columns.get_level_values(0)
+                data = data.replace([float('inf'), float('-inf')], pd.NA)
                 data = data.dropna(subset=['Open', 'High', 'Low', 'Close', 'Volume'])
 
                 val_list = []
                 last_date = None
                 for date, row in data.iterrows():
                     d = date.date() if hasattr(date, 'date') else datetime.date.fromisoformat(str(date)[:10])
-                    val_list.append((ticker, d, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), int(row['Volume'])))
+                    o, h, l, c = float(row['Open']), float(row['High']), float(row['Low']), float(row['Close'])
+                    if not all(math.isfinite(v) for v in [o, h, l, c]):
+                        continue
+                    val_list.append((ticker, d, o, h, l, c, int(row['Volume'])))
                     if last_date is None or d > last_date:
                         last_date = d
 
@@ -171,12 +176,16 @@ def _incremental_update(conn, session):
                     ticker_data = data[ticker] if len(batch) > 1 else data
                     if isinstance(ticker_data.columns, pd.MultiIndex):
                         ticker_data.columns = ticker_data.columns.get_level_values(0)
+                    ticker_data = ticker_data.replace([float('inf'), float('-inf')], pd.NA)
                     ticker_data = ticker_data.dropna(subset=['Open', 'High', 'Low', 'Close', 'Volume'])
 
                     for date, row in ticker_data.iterrows():
                         d = date.date() if hasattr(date, 'date') else datetime.date.fromisoformat(str(date)[:10])
                         if d > last_date:
-                            val_list.append((ticker, d, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), int(row['Volume'])))
+                            o, h, l, c = float(row['Open']), float(row['High']), float(row['Low']), float(row['Close'])
+                            if not all(math.isfinite(v) for v in [o, h, l, c]):
+                                continue
+                            val_list.append((ticker, d, o, h, l, c, int(row['Volume'])))
                             if ticker not in updated_tickers or d > updated_tickers[ticker]:
                                 updated_tickers[ticker] = d
                 except Exception as e:
