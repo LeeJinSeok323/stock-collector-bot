@@ -14,7 +14,6 @@ pipeline {
 
         DB_PASSWORD          = credentials('DB_PASSWORD')
         CLICKHOUSE_PASSWORD  = credentials('clickhouse-password')
-        DISCORD_TOKEN        = credentials('DISCORD_TOKEN')
         GEMINI_API_KEY       = credentials('GEMINI_API_KEY')
         GEMINI_MODEL_NAME    = 'gemini-3.1-flash-lite-preview'
     }
@@ -62,7 +61,6 @@ pipeline {
                         -e CLICKHOUSE_PORT=${CLICKHOUSE_PORT} \
                         -e CLICKHOUSE_USER=${CLICKHOUSE_USER} \
                         -e CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
-                        -e DISCORD_TOKEN=${DISCORD_TOKEN} \
                         -e GEMINI_API_KEY=${GEMINI_API_KEY} \
                         -e GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME} \
                         -e SEC_USER_AGENT=${SEC_USER_AGENT} \
