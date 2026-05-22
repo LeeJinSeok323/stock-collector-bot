@@ -28,7 +28,7 @@ def _initial_load(conn, session):
 
     for ticker in tickers:
         try:
-            if ticker.endswith(("-WT", "-UN", "-PR", "-P")) or (len(ticker) >= 3 and ticker[-1] in ('W', 'R', 'U') and ticker[-2].isalpha()):
+            if ticker.endswith(("-WT", "-UN", "-PR", "-P")):
                 print(f"[initial] Skipping special stock: {ticker}", flush=True)
                 with conn.cursor() as cursor:
                     cursor.execute("UPDATE stocks SET last_fetched_at = NOW() WHERE ticker = %s", (ticker,))

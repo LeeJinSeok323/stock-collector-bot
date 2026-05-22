@@ -34,10 +34,6 @@ def update_stocks():
             if any(s in ticker for s in trash_suffixes):
                 continue
 
-            # 구분자 없는 워런트(W), 권리(R), 유닛(U) 제거 (예: CMIIW, BACCR)
-            if len(ticker) >= 3 and ticker[-1] in ('W', 'R', 'U') and ticker[-2].isalpha():
-                continue
-
             ticker = ticker.replace(' ', '-').replace('.', '-')
 
             if not all(c.isalnum() or c == '-' for c in ticker):
