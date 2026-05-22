@@ -51,12 +51,12 @@ def update_stocks():
                 sql_upsert = """
                     INSERT INTO stocks (ticker, cik, company_name, exchange, status, delisted_at)
                     VALUES (%s, %s, %s, %s, 'ACTIVE', NULL)
-                    ON DUPLICATE KEY UPDATE 
-                        cik = VALUES(cik), 
+                    ON DUPLICATE KEY UPDATE
+                        cik = VALUES(cik),
                         company_name = VALUES(company_name),
-                        exchange = VALUES(exchange), 
-                        status = 'ACTIVE', 
-                        delisted_at = NULL
+                        exchange = VALUES(exchange),
+                        status = IF(delisted_at IS NOT NULL, 'DELISTED', 'ACTIVE'),
+                        delisted_at = delisted_at
                 """
                 cursor.executemany(sql_upsert, records)
 
