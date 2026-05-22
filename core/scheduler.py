@@ -4,6 +4,7 @@ import threading
 from core.init_stock_data import init_stock_data
 from core.index_collector import collect_indices
 from core.minute_collector import collect_and_aggregate
+from core.sec_collector import collect_sec_filings
 from scripts.sync_ticker_list import update_stocks
 
 
@@ -31,6 +32,7 @@ def run_scheduler():
     schedule.every(7).days.do(_run_in_thread, update_stocks)
     schedule.every(1).hours.do(_run_in_thread, _data_pipeline)
     schedule.every(10).minutes.do(_run_in_thread, collect_indices)
+    schedule.every().day.at("22:00").do(_run_in_thread, collect_sec_filings)
 
     print("[scheduler] Running initial jobs...", flush=True)
     _run_in_thread(update_stocks)

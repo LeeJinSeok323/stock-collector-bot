@@ -168,11 +168,22 @@ def _incremental_update(conn, session):
                 continue
 
             if yf.shared._ERRORS:
-                error_msgs = str(yf.shared._ERRORS).lower()
-                if "rate limit" in error_msgs or "too many requests" in error_msgs or "429" in error_msgs:
+                error_msgs_str = str(yf.shared._ERRORS).lower()
+                if "rate limit" in error_msgs_str or "too many requests" in error_msgs_str or "429" in error_msgs_str:
                     print(f"[incremental] Rate limited at batch {batch_num}. Sleeping for 15 minutes.", flush=True)
                     time.sleep(900)
                     continue
+
+                delisted_keywords = ("delisted", "no timezone found", "no price data", "yftzmissingerror", "period", "invalid")
+                with conn.cursor() as cursor:
+                    for err_ticker, err_msg in yf.shared._ERRORS.items():
+                        if any(k in str(err_msg).lower() for k in delisted_keywords):
+                            print(f"[incremental] Delisted detected for {err_ticker}: {err_msg}", flush=True)
+                            cursor.execute(
+                                "UPDATE stocks SET status = 'DELISTED', delisted_at = NOW() WHERE ticker = %s",
+                                (err_ticker,)
+                            )
+                    conn.commit()
 
             val_list = []
             updated_tickers = {}
