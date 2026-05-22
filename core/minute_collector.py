@@ -26,7 +26,7 @@ def _already_collected(target_date):
     """해당 날짜 분봉 데이터가 이미 적재됐는지 확인"""
     ch = get_clickhouse_client()
     result = ch.execute(
-        "SELECT count() FROM stocker.stock_minute_price WHERE toDate(datetime) = %(d)s",
+        "SELECT count() FROM stocker.ohlcv_minute WHERE toDate(datetime) = %(d)s",
         {'d': target_date}
     )
     return result[0][0] > 0
@@ -110,7 +110,7 @@ def _collect_minute_bars(conn, session, target_date):
 
             if val_list:
                 ch.execute(
-                    'INSERT INTO stocker.stock_minute_price '
+                    'INSERT INTO stocker.ohlcv_minute '
                     '(ticker, datetime, open, high, low, close, volume) VALUES',
                     val_list
                 )
@@ -144,7 +144,7 @@ def _aggregate_to_daily(target_date):
             min(low)                  AS low,
             argMax(close,  datetime)  AS close,
             sum(volume)               AS volume
-        FROM stocker.stock_minute_price
+        FROM stocker.ohlcv_minute
         WHERE toDate(datetime) = %(d)s
         GROUP BY ticker, date
     """, {'d': target_date})
